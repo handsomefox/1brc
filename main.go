@@ -3,8 +3,6 @@ package main
 import (
 	"bytes"
 	"fmt"
-	"maps"
-	"math"
 	"os"
 	"slices"
 	"syscall"
@@ -18,16 +16,20 @@ type Measurement struct {
 func (m *Measurement) Merge(value float32) {
 	m.Total++
 	m.Sum += value
-	m.Min = min(m.Min, value)
-	m.Max = max(m.Max, value)
+	if value < m.Min {
+		m.Min = value
+	}
+	if value > m.Max {
+		m.Max = value
+	}
 }
 
 func NewMeasurement(value float32) *Measurement {
 	return &Measurement{
-		Sum:   value,
-		Min:   min(math.MaxFloat32, value),
-		Max:   max(-math.MaxFloat32, value),
 		Total: 1,
+		Sum:   value,
+		Min:   value,
+		Max:   value,
 	}
 }
 
@@ -41,7 +43,6 @@ func main() {
 		fileBytes      = mmap(file)
 		fileReadOffset = 0
 		measurements   = make(map[string]*Measurement, 10_000)
-		nlBytes        = []byte{'\n'}
 	)
 
 	for fileReadOffset < len(fileBytes) {
@@ -55,7 +56,7 @@ func main() {
 			line = fileBytes[fileReadOffset : fileReadOffset+nl]
 			fileReadOffset += nl + 1
 		}
-		if len(line) == 0 || bytes.Equal(line, nlBytes) {
+		if len(line) == 0 {
 			continue
 		}
 
@@ -71,7 +72,10 @@ func main() {
 		}
 	}
 
-	keys := slices.Collect(maps.Keys(measurements))
+	keys := make([]string, 0, len(measurements))
+	for k := range measurements {
+		keys = append(keys, k)
+	}
 	slices.Sort(keys)
 
 	fmt.Print("{")
