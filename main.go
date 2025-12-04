@@ -6,6 +6,7 @@ import (
 	"os"
 	"slices"
 	"syscall"
+	"unsafe"
 )
 
 type Measurement struct {
@@ -64,7 +65,7 @@ func main() {
 		cityBytes := line[:sep]
 		valBytes := line[sep+1:]
 
-		city, measurement := string(cityBytes), parseFloat32(valBytes)
+		city, measurement := unsafeBytesToString(cityBytes), parseFloat32(valBytes)
 		if existing, ok := measurements[city]; ok {
 			existing.Merge(measurement)
 		} else {
@@ -143,4 +144,8 @@ func parseFloat32(b []byte) float32 {
 	}
 
 	return sign * (float32(intPart) + float32(fracPart)/fracDiv)
+}
+
+func unsafeBytesToString(b []byte) string {
+	return unsafe.String(&b[0], len(b))
 }
