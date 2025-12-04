@@ -9,13 +9,14 @@ import (
 )
 
 type Measurement struct {
-	Total         int
-	Sum, Min, Max float32
+	Total    int
+	Sum      int64
+	Min, Max int16
 }
 
-func (m *Measurement) Merge(value float32) {
+func (m *Measurement) Merge(value int16) {
 	m.Total++
-	m.Sum += value
+	m.Sum += int64(value)
 	if value < m.Min {
 		m.Min = value
 	}
@@ -24,10 +25,10 @@ func (m *Measurement) Merge(value float32) {
 	}
 }
 
-func NewMeasurement(value float32) *Measurement {
+func NewMeasurement(value int16) *Measurement {
 	return &Measurement{
 		Total: 1,
-		Sum:   value,
+		Sum:   int64(value),
 		Min:   value,
 		Max:   value,
 	}
@@ -97,7 +98,12 @@ func main() {
 	fmt.Print("{")
 	for i, key := range keys {
 		measure := measurements[key]
-		fmt.Printf("%s=%.1f/%.1f/%.1f", key, measure.Min, measure.Sum/float32(measure.Total), measure.Max)
+		fmt.Printf("%s=%.1f/%.1f/%.1f",
+			key,
+			formatTenths(measure.Min),
+			formatAvg(measure.Sum, measure.Total),
+			formatTenths(measure.Max),
+		)
 		if i != len(keys)-1 {
 			fmt.Print(" ")
 		}
@@ -129,38 +135,35 @@ func mmap(f *os.File) []byte {
 	return data
 }
 
-func parseFloat32(b []byte) float32 {
-	if len(b) == 0 {
-		return 0
-	}
-	sign := float32(1)
+func parseFloat32(b []byte) int16 {
 	i := 0
-	if b[0] == '-' {
+	sign := int16(1)
+	if b[i] == '-' {
 		sign = -1
 		i++
 	}
 
-	var intPart int32
-	for i < len(b) && b[i] != '.' {
-		intPart = intPart*10 + int32(b[i]-'0')
-		i++
+	var v int16
+	for ; i < len(b) && b[i] != '.'; i++ {
+		v = v*10 + int16(b[i]-'0')
+	}
+	i++
+
+	if i < len(b) {
+		v = v*10 + int16(b[i]-'0')
 	}
 
-	var fracPart int32
-	var fracDiv float32 = 1
-
-	if i < len(b) && b[i] == '.' {
-		i++
-		for i < len(b) {
-			fracPart = fracPart*10 + int32(b[i]-'0')
-			fracDiv *= 10
-			i++
-		}
-	}
-
-	return sign * (float32(intPart) + float32(fracPart)/fracDiv)
+	return sign * v
 }
 
 func unsafeBytesToString(b []byte) string {
 	return unsafe.String(&b[0], len(b))
+}
+
+func formatTenths(v int16) float32 {
+	return float32(v) / 10
+}
+
+func formatAvg(sum int64, total int) float32 {
+	return float32(sum) / float32(total*10)
 }
