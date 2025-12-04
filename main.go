@@ -43,29 +43,30 @@ func main() {
 	var (
 		fileBytes      = mmap(file)
 		fileReadOffset = 0
+		fileLength     = len(fileBytes)
 		measurements   = make(map[string]*Measurement, 10_000)
 	)
 
-	for fileReadOffset < len(fileBytes) {
+	for fileReadOffset < fileLength {
 		i := fileReadOffset
 
 		start := i
-		for i < len(fileBytes) && fileBytes[i] != ';' {
+		for i < fileLength && fileBytes[i] != ';' {
 			i++
 		}
-		if i >= len(fileBytes) {
+		if i >= fileLength {
 			break
 		}
 		cityBytes := fileBytes[start:i]
 		i++ // skip ';'
 
 		valStart := i
-		for i < len(fileBytes) && fileBytes[i] != '\n' {
+		for i < fileLength && fileBytes[i] != '\n' {
 			i++
 		}
 		valEnd := i
 		if valEnd == valStart { // empty value
-			if i < len(fileBytes) {
+			if i < fileLength {
 				i++
 			}
 			fileReadOffset = i
@@ -83,7 +84,7 @@ func main() {
 		}
 
 		// skip '\n' if present
-		if i < len(fileBytes) && fileBytes[i] == '\n' {
+		if i < fileLength && fileBytes[i] == '\n' {
 			i++
 		}
 		fileReadOffset = i
