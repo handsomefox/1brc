@@ -36,14 +36,19 @@ func ParseLine(line string) (city string, value float32) {
 	return split[0], float32(measureFloat)
 }
 
+const (
+	MB      = 1 << 20
+	BufSize = 128 * MB
+)
+
 func main() {
 	f, err := os.Open("measurements.txt")
 	if err != nil {
 		panic(err)
 	}
 	sc := bufio.NewScanner(f)
-
-	data := make(map[string]*Measurement)
+	sc.Buffer(make([]byte, 0, BufSize), BufSize)
+	data := make(map[string]*Measurement, 10_000)
 
 	for sc.Scan() {
 		line := sc.Text()
@@ -58,13 +63,13 @@ func main() {
 	keys := slices.Collect(maps.Keys(data))
 	slices.Sort(keys)
 
-	print("{")
+	fmt.Print("{")
 	for i, key := range keys {
 		measure := data[key]
 		fmt.Printf("%s=%.1f/%.1f/%.1f", key, measure.Min, measure.Sum/float32(measure.Total), measure.Max)
 		if i != len(keys)-1 {
-			print(" ")
+			fmt.Print(" ")
 		}
 	}
-	print("}\n")
+	fmt.Print("}\n")
 }
