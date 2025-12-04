@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"slices"
@@ -47,30 +46,46 @@ func main() {
 	)
 
 	for fileReadOffset < len(fileBytes) {
-		nl := bytes.IndexByte(fileBytes[fileReadOffset:], '\n')
+		i := fileReadOffset
 
-		var line []byte
-		if nl == -1 {
-			line = fileBytes[fileReadOffset:]
-			fileReadOffset = len(fileBytes)
-		} else {
-			line = fileBytes[fileReadOffset : fileReadOffset+nl]
-			fileReadOffset += nl + 1
+		start := i
+		for i < len(fileBytes) && fileBytes[i] != ';' {
+			i++
 		}
-		if len(line) == 0 {
+		if i >= len(fileBytes) {
+			break
+		}
+		cityBytes := fileBytes[start:i]
+		i++ // skip ';'
+
+		valStart := i
+		for i < len(fileBytes) && fileBytes[i] != '\n' {
+			i++
+		}
+		valEnd := i
+		if valEnd == valStart { // empty value
+			if i < len(fileBytes) {
+				i++
+			}
+			fileReadOffset = i
 			continue
 		}
 
-		sep := bytes.IndexByte(line, ';')
-		cityBytes := line[:sep]
-		valBytes := line[sep+1:]
+		city := unsafeBytesToString(cityBytes)
+		value := parseFloat32(fileBytes[valStart:valEnd])
 
-		city, measurement := unsafeBytesToString(cityBytes), parseFloat32(valBytes)
-		if existing, ok := measurements[city]; ok {
-			existing.Merge(measurement)
+		existing := measurements[city]
+		if existing != nil {
+			existing.Merge(value)
 		} else {
-			measurements[city] = NewMeasurement(measurement)
+			measurements[city] = NewMeasurement(value)
 		}
+
+		// skip '\n' if present
+		if i < len(fileBytes) && fileBytes[i] == '\n' {
+			i++
+		}
+		fileReadOffset = i
 	}
 
 	keys := make([]string, 0, len(measurements))
