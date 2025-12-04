@@ -7,7 +7,6 @@ import (
 	"math"
 	"os"
 	"slices"
-	"strconv"
 	"syscall"
 )
 
@@ -63,12 +62,8 @@ func main() {
 		sep := bytes.IndexByte(line, ';')
 		cityBytes := line[:sep]
 		valBytes := line[sep+1:]
-		val, err := strconv.ParseFloat(string(valBytes), 32)
-		if err != nil {
-			panic(err)
-		}
 
-		city, measurement := string(cityBytes), float32(val)
+		city, measurement := string(cityBytes), parseFloat32(valBytes)
 		if existing, ok := measurements[city]; ok {
 			existing.Merge(measurement)
 		} else {
@@ -112,4 +107,36 @@ func mmap(f *os.File) []byte {
 	}
 
 	return data
+}
+
+func parseFloat32(b []byte) float32 {
+	if len(b) == 0 {
+		return 0
+	}
+	sign := float32(1)
+	i := 0
+	if b[0] == '-' {
+		sign = -1
+		i++
+	}
+
+	var intPart int32
+	for i < len(b) && b[i] != '.' {
+		intPart = intPart*10 + int32(b[i]-'0')
+		i++
+	}
+
+	var fracPart int32
+	var fracDiv float32 = 1
+
+	if i < len(b) && b[i] == '.' {
+		i++
+		for i < len(b) {
+			fracPart = fracPart*10 + int32(b[i]-'0')
+			fracDiv *= 10
+			i++
+		}
+	}
+
+	return sign * (float32(intPart) + float32(fracPart)/fracDiv)
 }
