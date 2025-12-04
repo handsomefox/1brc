@@ -1,5 +1,7 @@
 # 1 Billion row challenge
 
+All credits to: https://github.com/gunnarmorling/1brc
+
 ## Perf
 
 Ran on my Ryzen 7 5700X3D:
