@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"runtime/debug"
 	"slices"
 	"sync"
 	"syscall"
@@ -37,6 +38,7 @@ func NewMeasurement(value int16) *Measurement {
 }
 
 func main() {
+	debug.SetGCPercent(-1)
 	measurements := run()
 
 	keys := make([]string, 0, len(measurements))
